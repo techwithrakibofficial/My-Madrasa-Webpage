@@ -1,0 +1,30 @@
+plugins { id 'com.android.application' }
+android {
+ namespace 'bd.org.noorani.madrasa'
+ compileSdk 35
+ defaultConfig {
+  applicationId 'bd.org.noorani.madrasa'
+  minSdk 23
+  targetSdk 35
+  versionCode (System.getenv('BUILD_NUMBER') ?: '1').toInteger()
+  versionName "1.0.${System.getenv('BUILD_NUMBER') ?: '1'}"
+ }
+ signingConfigs {
+  preview {
+   storeFile file('../preview.keystore')
+   storePassword 'android'
+   keyAlias 'androiddebugkey'
+   keyPassword 'android'
+  }
+ }
+ buildTypes {
+  release {
+   signingConfig signingConfigs.preview
+   minifyEnabled false
+   debuggable false
+  }
+ }
+ compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+ lint { abortOnError true }
+}
+dependencies { implementation 'androidx.browser:browser:1.8.0' }
