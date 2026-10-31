@@ -1,3 +1,5 @@
+App display name: আমাদের মাদরাসা. The full institution name and campus photo area are displayed side by side, including mobile layouts. Automatic transform animation works on touch devices without mouse hover.
+
 The app now opens its full dashboard and pages inside the installed app. It no longer launches the website or requires ChatGPT login. The UI and Bengali fonts are bundled; local records work offline. All management data stays on this phone. Website synchronization, separate multi-user accounts, SMS and payments are not connected.
 
 The dashboard prominently displays the full institution name in Bengali and English, with emerald/gold glass styling and animation.

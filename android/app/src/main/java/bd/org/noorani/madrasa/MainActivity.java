@@ -78,7 +78,7 @@ public class MainActivity extends Activity {
     try{startActivityForResult(intent,SAVE_FILE);}catch(ActivityNotFoundException e){pendingFile=null;Toast.makeText(MainActivity.this,"ফাইল সংরক্ষণের অ্যাপ পাওয়া যায়নি",Toast.LENGTH_LONG).show();}
    });
   }
-  @JavascriptInterface public void printPage(){runOnUiThread(()->{PrintManager pm=(PrintManager)getSystemService(PRINT_SERVICE);if(pm!=null)pm.print("Noorani Madrasa",web.createPrintDocumentAdapter("Madrasa"),new PrintAttributes.Builder().build());});}
+  @JavascriptInterface public void printPage(){runOnUiThread(()->{PrintManager pm=(PrintManager)getSystemService(PRINT_SERVICE);if(pm!=null)pm.print("আমাদের মাদরাসা",web.createPrintDocumentAdapter("আমাদের মাদরাসা"),new PrintAttributes.Builder().build());});}
  }
  @Override protected void onActivityResult(int request,int result,Intent data){super.onActivityResult(request,result,data);
   if(request==PICK_FILE&&fileCallback!=null){fileCallback.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(result,data));fileCallback=null;}

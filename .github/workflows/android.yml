@@ -42,8 +42,8 @@ jobs:
       - name: Verify APK signature and prepare download
         run: |
           mkdir -p release
-          cp android/app/build/outputs/apk/release/app-release.apk "release/Noorani-Madrasa-v1.0.${BUILD_NUMBER}.apk"
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "release/Noorani-Madrasa-v1.0.${BUILD_NUMBER}.apk"
+          cp android/app/build/outputs/apk/release/app-release.apk "release/Amader-Madrasa-v1.0.${BUILD_NUMBER}.apk"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "release/Amader-Madrasa-v1.0.${BUILD_NUMBER}.apk"
           cd release
           sha256sum *.apk > SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
@@ -55,4 +55,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "v1.0.${BUILD_NUMBER}" release/* --target "$GITHUB_SHA" --title "Noorani Madrasa v1.0.${BUILD_NUMBER}" --notes-file android/RELEASE_NOTES.md
+          gh release create "v1.0.${BUILD_NUMBER}" release/* --target "$GITHUB_SHA" --title "আমাদের মাদরাসা v1.0.${BUILD_NUMBER}" --notes-file android/RELEASE_NOTES.md

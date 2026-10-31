@@ -32,3 +32,5 @@ Image/PDF selection, print-to-PDF and backup export use Android's native pickers
 The GitHub Actions workflow first builds the bundled UI, then compiles and lints the APK, verifies its signature and publishes a Release. The intentionally public preview signing key is not a confidential production key. A confidential signing key is required before public app distribution.
 
 Install the updated APK over the previous version. Minimum Android 6 with an up-to-date System WebView. The website still uses its existing private authenticated access.
+
+App display name: **আমাদের মাদরাসা**. Dashboard institution name and campus photo area share a responsive side-by-side panel on mobile and desktop. CSS transform animation runs automatically on touch devices; mouse tilt is a desktop enhancement.
