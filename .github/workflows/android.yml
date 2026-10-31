@@ -2,7 +2,7 @@ name: Build Android APK and publish release
 on:
   push:
     branches: [main]
-    paths: ['android/**', '.github/workflows/android.yml']
+    paths: ['android/**', 'android-web/**', 'app/madrasa.tsx', 'app/globals.css', 'app/local-data.ts', '.github/workflows/android.yml']
   workflow_dispatch:
 permissions:
   contents: write
@@ -30,6 +30,13 @@ jobs:
           gradle-version: '8.9'
       - name: Install Android SDK
         run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Bundle the complete offline app
+        run: |
+          npm ci --prefix android-web --ignore-scripts --no-audit --no-fund
+          npm run build --prefix android-web
       - name: Compile and lint
         run: gradle -p android assembleRelease lintRelease --no-daemon --stacktrace
       - name: Verify APK signature and prepare download

@@ -48,3 +48,8 @@ yarn-error.log*
 android/.gradle/
 android/**/build/
 android/local.properties
+
+android-web/node_modules/
+android-web/public/fonts/
+android-web/public/fonts.css
+android/app/src/main/assets/www/

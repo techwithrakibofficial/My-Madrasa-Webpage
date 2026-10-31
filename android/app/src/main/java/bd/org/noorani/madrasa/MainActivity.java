@@ -1,76 +1,89 @@
 package bd.org.noorani.madrasa;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.graphics.Color;
-import android.graphics.Typeface;
-import android.graphics.drawable.GradientDrawable;
-import android.net.ConnectivityManager;
-import android.net.NetworkCapabilities;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.view.Gravity;
+import android.print.PrintAttributes;
+import android.print.PrintManager;
+import android.util.Base64;
 import android.view.View;
 import android.view.WindowInsets;
-import android.widget.Button;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.TextView;
-import androidx.browser.customtabs.CustomTabColorSchemeParams;
-import androidx.browser.customtabs.CustomTabsIntent;
+import android.webkit.JavascriptInterface;
+import android.webkit.JsResult;
+import android.webkit.ValueCallback;
+import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.widget.FrameLayout;
+import android.widget.Toast;
+import androidx.webkit.WebViewAssetLoader;
+import java.io.OutputStream;
 
-/** Browser-backed app: uses the browser's secure sign-in session instead of embedding OAuth in a WebView. */
+/** Embedded offline app. It never navigates to the hosted website to display its pages. */
 public class MainActivity extends Activity {
-    private static final String SITE = "https://dhekuncha-noorani-madrasa.freshspice37.chatgpt.site";
-    private TextView status;
-    private final int green = Color.rgb(36,87,64);
-    @Override public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        LinearLayout root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.setGravity(Gravity.CENTER);
-        root.setPadding(dp(28),dp(36),dp(28),dp(36));
-        root.setBackground(new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{Color.rgb(244,246,242),Color.rgb(225,235,215),Color.rgb(243,237,219)}));
-        if(Build.VERSION.SDK_INT >= 30) root.setOnApplyWindowInsetsListener((view,insets)->{
-            android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars());
-            view.setPadding(dp(28)+bars.left,dp(24)+bars.top,dp(28)+bars.right,dp(24)+bars.bottom);
-            return insets;
-        });
-        ImageView icon = new ImageView(this); icon.setImageResource(bd.org.noorani.madrasa.R.drawable.ic_madrasa);
-        LinearLayout.LayoutParams iconParams=new LinearLayout.LayoutParams(dp(90),dp(90)); iconParams.bottomMargin=dp(24); root.addView(icon,iconParams);
-        TextView title=text("নূরানী মাদ্রাসা",28,true); root.addView(title);
-        TextView full=text("ঢেকুঞ্চা দিয়ল চারমাথা বাজার\nনূরানী হাফেজিয়া মাদ্রাসা",17,false); gap(full,14);root.addView(full);
-        TextView slogan=text("ইলমের আলোয় আলোকিত হোক আগামী",14,false);gap(slogan,15);root.addView(slogan);
-        Button open=new Button(this);open.setText("ওয়েবসাইট খুলুন  ↗");open.setTextColor(Color.WHITE);open.setTextSize(16);open.setAllCaps(false);
-        GradientDrawable bg=new GradientDrawable(GradientDrawable.Orientation.TL_BR,new int[]{Color.rgb(103,151,115),green,Color.rgb(133,145,84)});bg.setCornerRadius(dp(30));bg.setStroke(dp(1),Color.rgb(169,193,143));open.setBackground(bg);
-        LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,dp(56));params.topMargin=dp(28);root.addView(open,params);open.setOnClickListener(v->openSite());
-        status=text("ইন্টারনেট সংযোগ প্রয়োজন। প্রাইভেট সংস্করণে প্রথমবার আপনার অনুমোদিত ChatGPT অ্যাকাউন্ট দিয়ে লগইন করুন।",13,false);gap(status,22);root.addView(status);
-        TextView info=text("ফলাফল · রুটিন · নোটিশ · ভর্তি",13,true);gap(info,25);root.addView(info);
-        setContentView(root);
-        if(savedInstanceState==null && online()) root.post(this::openSite);
+ private static final String HOME="https://appassets.androidplatform.net/assets/www/index.html";
+ private static final int PICK_FILE=10, SAVE_FILE=11;
+ private WebView web;
+ private ValueCallback<Uri[]> fileCallback;
+ private byte[] pendingFile;
+ @SuppressLint("SetJavaScriptEnabled")
+ @Override public void onCreate(Bundle state){
+  super.onCreate(state);
+  FrameLayout root=new FrameLayout(this);root.setBackgroundColor(Color.rgb(244,246,242));
+  web=new WebView(this);web.setBackgroundColor(Color.rgb(244,246,242));
+  WebSettings settings=web.getSettings();settings.setJavaScriptEnabled(true);settings.setDomStorageEnabled(true);settings.setAllowFileAccess(false);settings.setAllowContentAccess(true);settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);settings.setSupportMultipleWindows(false);
+  WebViewAssetLoader loader=new WebViewAssetLoader.Builder().addPathHandler("/assets/",new WebViewAssetLoader.AssetsPathHandler(this)).build();
+  web.setWebViewClient(new WebViewClient(){
+   @Override public WebResourceResponse shouldInterceptRequest(WebView view,WebResourceRequest request){return loader.shouldInterceptRequest(request.getUrl());}
+   @Override public boolean shouldOverrideUrlLoading(WebView view,WebResourceRequest request){
+    Uri u=request.getUrl();if("https".equals(u.getScheme())&&"appassets.androidplatform.net".equals(u.getHost())&&u.getPath()!=null&&u.getPath().startsWith("/assets/www/"))return false;
+    if(!request.isForMainFrame())return true;
+    String scheme=u.getScheme();if("https".equals(scheme)||"http".equals(scheme)||"tel".equals(scheme)||"mailto".equals(scheme)){
+     try{startActivity(new Intent(Intent.ACTION_VIEW,u));}catch(ActivityNotFoundException e){Toast.makeText(MainActivity.this,"এই লিংক খোলার উপযুক্ত অ্যাপ পাওয়া যায়নি",Toast.LENGTH_LONG).show();}
     }
-    private boolean online(){
-        ConnectivityManager manager=(ConnectivityManager)getSystemService(CONNECTIVITY_SERVICE);
-        if(manager==null)return false;
-        NetworkCapabilities cap=manager.getNetworkCapabilities(manager.getActiveNetwork());
-        return cap!=null&&cap.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
-    }
-    private void openSite(){
-        if(!online()){status.setText("ইন্টারনেট সংযোগ পাওয়া যায়নি। সংযোগ চালু করে আবার ‘ওয়েবসাইট খুলুন’ চাপুন।");return;}
-        try{
-            CustomTabsIntent tab=new CustomTabsIntent.Builder()
-              .setDefaultColorSchemeParams(new CustomTabColorSchemeParams.Builder().setToolbarColor(green).setNavigationBarColor(Color.rgb(244,246,242)).build())
-              .setShowTitle(true).setUrlBarHidingEnabled(true).build();
-            tab.launchUrl(this,Uri.parse(SITE));
-        }catch(ActivityNotFoundException unavailable){
-            try{startActivity(new Intent(Intent.ACTION_VIEW,Uri.parse(SITE)));}
-            catch(ActivityNotFoundException missing){new AlertDialog.Builder(this).setTitle("ব্রাউজার প্রয়োজন").setMessage("ফোনে Chrome বা অন্য একটি HTTPS সমর্থিত ব্রাউজার চালু করে আবার চেষ্টা করুন।").setPositiveButton("ঠিক আছে",null).show();}
-        }
-    }
-    private TextView text(String value,int size,boolean bold){TextView t=new TextView(this);t.setText(value);t.setTextSize(size);t.setTextColor(green);t.setGravity(Gravity.CENTER);t.setLineSpacing(dp(5),1);t.setTypeface(Typeface.create("sans-serif",bold?Typeface.BOLD:Typeface.NORMAL));return t;}
-    private void gap(View view,int top){LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT);p.topMargin=dp(top);view.setLayoutParams(p);}
-    private int dp(int value){return Math.round(value*getResources().getDisplayMetrics().density);}
+    return true;
+   }
+  });
+  web.setWebChromeClient(new WebChromeClient(){
+   @Override public boolean onShowFileChooser(WebView view,ValueCallback<Uri[]> callback,FileChooserParams params){
+    if(fileCallback!=null)fileCallback.onReceiveValue(null);fileCallback=callback;
+    try{Intent i=params.createIntent();i.addCategory(Intent.CATEGORY_OPENABLE);startActivityForResult(i,PICK_FILE);}
+    catch(ActivityNotFoundException e){fileCallback.onReceiveValue(null);fileCallback=null;Toast.makeText(MainActivity.this,"ফাইল বাছাই করার অ্যাপ পাওয়া যায়নি",Toast.LENGTH_LONG).show();}
+    return true;
+   }
+   @Override public boolean onJsConfirm(WebView view,String url,String message,JsResult result){
+    new AlertDialog.Builder(MainActivity.this).setMessage(message).setPositiveButton("হ্যাঁ",(d,w)->result.confirm()).setNegativeButton("বাতিল",(d,w)->result.cancel()).setOnCancelListener(d->result.cancel()).show();return true;
+   }
+  });
+  web.addJavascriptInterface(new NativeFiles(),"MadrasaNative");
+  root.addView(web,new FrameLayout.LayoutParams(-1,-1));
+  if(Build.VERSION.SDK_INT>=30)root.setOnApplyWindowInsetsListener((view,insets)->{android.graphics.Insets bars=insets.getInsets(WindowInsets.Type.systemBars());view.setPadding(bars.left,bars.top,bars.right,bars.bottom);return insets;});
+  setContentView(root);web.loadUrl(HOME);
+ }
+ public final class NativeFiles {
+  @JavascriptInterface public void saveFile(String name,String mime,String encoded){
+   if(encoded==null||encoded.length()>115000000){runOnUiThread(()->Toast.makeText(MainActivity.this,"ফাইলটি অনেক বড়",Toast.LENGTH_LONG).show());return;}
+   final byte[] bytes;try{bytes=Base64.decode(encoded,Base64.DEFAULT);}catch(IllegalArgumentException e){return;}
+   runOnUiThread(()->{if(pendingFile!=null){Toast.makeText(MainActivity.this,"আগের ফাইল সংরক্ষণ শেষ করুন",Toast.LENGTH_SHORT).show();return;}pendingFile=bytes;
+    Intent intent=new Intent(Intent.ACTION_CREATE_DOCUMENT);intent.addCategory(Intent.CATEGORY_OPENABLE);intent.setType(mime!=null&&mime.matches("[a-zA-Z0-9.+-]+/[a-zA-Z0-9.+-]+")?mime:"application/octet-stream");intent.putExtra(Intent.EXTRA_TITLE,name==null?"Madrasa-file":name.replaceAll("[/\\\\]","_"));
+    try{startActivityForResult(intent,SAVE_FILE);}catch(ActivityNotFoundException e){pendingFile=null;Toast.makeText(MainActivity.this,"ফাইল সংরক্ষণের অ্যাপ পাওয়া যায়নি",Toast.LENGTH_LONG).show();}
+   });
+  }
+  @JavascriptInterface public void printPage(){runOnUiThread(()->{PrintManager pm=(PrintManager)getSystemService(PRINT_SERVICE);if(pm!=null)pm.print("Noorani Madrasa",web.createPrintDocumentAdapter("Madrasa"),new PrintAttributes.Builder().build());});}
+ }
+ @Override protected void onActivityResult(int request,int result,Intent data){super.onActivityResult(request,result,data);
+  if(request==PICK_FILE&&fileCallback!=null){fileCallback.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(result,data));fileCallback=null;}
+  if(request==SAVE_FILE){byte[] bytes=pendingFile;pendingFile=null;if(result==RESULT_OK&&data!=null&&data.getData()!=null&&bytes!=null){Uri uri=data.getData();new Thread(()->{try(OutputStream out=getContentResolver().openOutputStream(uri)){if(out==null)throw new java.io.IOException();out.write(bytes);runOnUiThread(()->Toast.makeText(this,"ফাইল সংরক্ষিত হয়েছে",Toast.LENGTH_SHORT).show());}catch(Exception e){runOnUiThread(()->Toast.makeText(this,"ফাইল সংরক্ষণ হয়নি। আবার চেষ্টা করুন।",Toast.LENGTH_LONG).show());}}).start();}}
+ }
+ @Override public void onBackPressed(){web.evaluateJavascript("location.hash",hash->{if(hash!=null&&!hash.equals("\"\"")&&!hash.equals("\"#home\"")){web.evaluateJavascript("location.hash='home'",null);}else{new AlertDialog.Builder(this).setMessage("অ্যাপ বন্ধ করবেন?").setPositiveButton("হ্যাঁ",(d,w)->finish()).setNegativeButton("না",null).show();}});}
+ @Override protected void onDestroy(){if(fileCallback!=null)fileCallback.onReceiveValue(null);if(web!=null){web.removeJavascriptInterface("MadrasaNative");web.destroy();}super.onDestroy();}
 }

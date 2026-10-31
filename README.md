@@ -22,9 +22,13 @@ Vinext / React / Cloudflare Workers, D1 binding DB and R2 binding BUCKET. Schema
 
 Use the maintained Sites build helper, then the source workflow and private deployment. Keep the existing project_id.
 
-## Android APK
-The android/ directory contains a Java Android application that opens the hosted website through Android Custom Tabs, so normal browser login and secure cookies work. It is not an offline native app. Android 6+ and an HTTPS browser are required. The private Site requires the authorized owner’s ChatGPT sign-in.
+## Android app (embedded/offline edition)
+The complete React UI and Bengali fonts are bundled into the APK and displayed with Android WebViewAssetLoader. The app launches directly into its own dashboard; no browser or ChatGPT sign-in is needed.
 
-The GitHub Actions workflow builds and lints the release APK and creates a downloadable GitHub Release on main-branch Android changes. The included preview.keystore is an intentionally public test key (password android), not a production secret. It permits reproducible preview updates; use a confidential release key before public distribution.
+Records are saved in IndexedDB on this device. This is a personal, single-device edition. App data and the hosted website database are separate and are not synchronized. Website payments, SMS/email integrations and separate teacher/guardian accounts remain unconnected. Use Admin > Complete backup before uninstalling, clearing app data, or switching phones. Restore merges records by ID.
 
-Download the APK asset from Releases. Android may ask to allow installation from the downloading browser. No root or developer options are required.
+Image/PDF selection, print-to-PDF and backup export use Android's native pickers/print service. External call, map, social and contact links may open the appropriate other app. Startup and all internal pages remain inside this app.
+
+The GitHub Actions workflow first builds the bundled UI, then compiles and lints the APK, verifies its signature and publishes a Release. The intentionally public preview signing key is not a confidential production key. A confidential signing key is required before public app distribution.
+
+Install the updated APK over the previous version. Minimum Android 6 with an up-to-date System WebView. The website still uses its existing private authenticated access.
